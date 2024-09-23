@@ -5,13 +5,13 @@
 
 use core::panic::PanicInfo;
 
+mod vag_buffer;
+
 /// This function is called on panic.
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
-
-static HELLO: &[u8] = b"Hello, world!\n";
 
 /*
 By using the #[no_mangle] attribute, we disable name mangling to ensure that the Rust
@@ -22,14 +22,7 @@ the name of the entry point function to the linker in the next step.
 */
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    // VGA text buffer format: 2 bytes = ASCII + color
-    let vag_buffer_ptr = 0xb8000 as *mut u8;
-    for (i, &byte) in HELLO.iter().enumerate() {
-        unsafe {
-            *vag_buffer_ptr.offset(i as isize * 2) = byte;
-            *vag_buffer_ptr.offset(i as isize * 2 + 1) = 0xb; // color(light cyan)
-        }
-    }
+    vag_buffer::print_to_vag_test();
 
     loop {
         // do nothing
