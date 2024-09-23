@@ -5,11 +5,12 @@
 
 use core::panic::PanicInfo;
 
-mod vag_buffer;
+mod vga_buffer;
 
 /// This function is called on panic.
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
     loop {}
 }
 
@@ -22,8 +23,8 @@ the name of the entry point function to the linker in the next step.
 */
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    vag_buffer::print_to_vag_test();
-
+    vga_buffer::print_to_vag_test();
+    // panic!("Some panic message");
     loop {
         // do nothing
     }
