@@ -6,27 +6,23 @@
 
 use core::panic::PanicInfo;
 use rust_op_system::println;
+use rust_op_system::serial_println;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    println!("Hello World{}", "!");
-
-    #[cfg(test)]
     test_main();
 
     loop {}
 }
 
-/// This function is called on panic.
-#[cfg(not(test))]
-#[panic_handler]
-fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
-    loop {}
-}
-
-#[cfg(test)]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     rust_op_system::test_panic_handler(info)
+    // serial_println!("it panics");
+    // loop {}
+}
+
+#[test_case]
+fn test_println() {
+    println!("test_println output");
 }
