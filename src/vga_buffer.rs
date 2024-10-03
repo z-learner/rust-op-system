@@ -51,6 +51,7 @@ const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
 use volatile::Volatile;
+use x86_64::instructions::interrupts;
 
 #[repr(transparent)]
 struct Buffer {
@@ -121,7 +122,7 @@ impl Writer {
     }
 }
 
-use core::fmt;
+use core::{fmt, iter::Inspect};
 
 impl fmt::Write for Writer {
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -154,7 +155,11 @@ macro_rules! println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+    use x86_64::instructions::interrupts;
+
+    interrupts::without_interrupts(|| {
+        WRITER.lock().write_fmt(args).unwrap();
+    });
 }
 
 // test function of printing to VGA buffer
@@ -170,10 +175,19 @@ pub fn print_to_vag_test() {
 
 #[test_case]
 fn test_println_output() {
+    use core::fmt::Write;
+    use x86_64::instructions::interrupts;
+
     let s = "Some test string that fits on a single line";
-    println!("{}", s);
-    for (i, c) in s.chars().enumerate() {
-        let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-        assert_eq!(char::from(screen_char.ascii_character), c);
-    }
+
+    interrupts::without_interrupts(|| {
+        let mut writer = WRITER.lock();
+        // Since the timer interrupt handler can still run before the test,
+        // we print an additional newline \n before printing the string s.
+        writeln!(writer, "\n{}", s).expect("Failed to write to VGA buffer");
+        for (i, c) in s.chars().enumerate() {
+            let screen_char = writer.buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(screen_char.ascii_character), c);
+        }
+    });
 }

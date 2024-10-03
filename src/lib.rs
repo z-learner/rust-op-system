@@ -66,6 +66,17 @@ fn panic(info: &PanicInfo) -> ! {
 pub fn init() {
     gdt::init();
     interrupts::init_idt();
+    unsafe {
+        interrupts::PICS.lock().initialize();
+    }
+    x86_64::instructions::interrupts::enable();
+}
+
+// This allows the CPU to enter a sleep state in which it consumes much less energy
+pub fn hlt_loop() -> ! {
+    loop {
+        x86_64::instructions::hlt();
+    }
 }
 
 /// Entry point for `cargo test`
@@ -74,5 +85,5 @@ pub fn init() {
 pub extern "C" fn _start() -> ! {
     init();
     test_main();
-    loop {}
+    hlt_loop();
 }
